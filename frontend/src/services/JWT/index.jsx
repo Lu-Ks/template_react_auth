@@ -1,9 +1,10 @@
-/* eslint-disable no-console */
 import JWTDecode from 'jwt-decode';
 
 import EventEmitter from 'utils/EventEmitter';
 import API from 'services/API';
+/* eslint-disable no-console */
 import UserService from 'services/API/User';
+import { toast } from 'react-toastify';
 
 // TODO: SWITCH CONSOLE OUTPUT TO TOAST SYSTEM
 
@@ -55,7 +56,9 @@ class JWTService extends EventEmitter {
       // WE TEMPORY REFRESH TOKEN EVERYTIME CAUSE OF BUG ( no retry when token expired )
       // await this.setSession(token, refreshToken);
       // this.emit('onAutoLogin', JWTDecode(token));
-      this.signInWithRefreshToken();
+
+      // TOKEN OK try to use it
+      toast.success('ok');
     } else if (refreshToken) {
       this.signInWithRefreshToken();
     } else {
@@ -106,7 +109,7 @@ class JWTService extends EventEmitter {
               // eslint-disable-next-line camelcase
               const { token, refresh_token } = response.data;
               await this.setSession(token, refresh_token);
-              await this.emit('onLogged', response.data); 
+              await this.emit('onLogged', response.data);
               await resolve();
             })
             .catch((error) => {
@@ -163,7 +166,7 @@ class JWTService extends EventEmitter {
       try {
         // Define default Authorization header
         API.defaults.headers.common.Authorization = `Bearer ${token}`;
-        
+
         localStorage.setItem('jwt_token', token);
         localStorage.setItem('jwt_refresh_token', refreshToken);
 
@@ -191,11 +194,16 @@ class JWTService extends EventEmitter {
    */
   isValidAuthToken = (token) => {
     if (!token) return false;
-
-    const decoded = JWTDecode(token);
+    let decoded = null;
+    try {
+      decoded = JWTDecode(token);
+    } catch (error) {
+      return false;
+    }
     const currentTime = Date.now() / 1000;
     if (decoded.exp < currentTime) {
       console.warn('Token expiré.');
+      toast.warn('Connexion expiré');
       return false;
     }
 
